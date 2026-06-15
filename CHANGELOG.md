@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.2.0 (2026-06-15)
+
+### Features
+
+- Rename project from ragsync-mcp to ragsync and update related references
+  ([`2c1e13e`](https://github.com/jsbroks/ragsync-mcp/commit/2c1e13e7c50f7cf2352423b19b1294385cda2620))
+
+
 ## v0.1.0 (2026-06-15)
 
 ### Features
