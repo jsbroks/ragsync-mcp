@@ -105,7 +105,7 @@ Already implemented in `ingestion.py` + `vectorstore.py`:
 uv sync                                # core deps
 uv sync --extra openai                 # optional hosted embedding provider
 uv sync --extra dev                    # test deps (pytest)
-uv run ragsync-mcp --config examples/config.example.yaml
+uv run ragsync --config examples/config.example.yaml
 ```
 
 There is no network access to model hosts in some sandboxes; `fastembed`

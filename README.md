@@ -1,4 +1,4 @@
-# ragsync-mcp
+# ragsync
 
 A configuration-driven [Model Context Protocol](https://modelcontextprotocol.io)
 server that ingests data from arbitrary sources, watches them for changes,
@@ -28,7 +28,7 @@ run.
 ## Run
 
 ```bash
-uv run ragsync-mcp --config examples/config.example.yaml
+uv run ragsync --config examples/config.example.yaml
 ```
 
 The server reads the config, builds one pipeline per source, runs an initial
@@ -75,7 +75,7 @@ location differs:
         "run",
         "--directory",
         "/abs/path/to/ragsync-mcp",
-        "ragsync-mcp",
+        "ragsync",
         "--config",
         "/abs/path/to/ragsync-mcp/examples/config.example.yaml"
       ]
@@ -87,14 +87,14 @@ location differs:
 ### Option B — install the command, then reference it
 
 ```bash
-uv tool install /abs/path/to/ragsync-mcp        # provides the `ragsync-mcp` command
+uv tool install /abs/path/to/ragsync-mcp        # provides the `ragsync` command
 ```
 
 ```json
 {
   "mcpServers": {
     "ragsync": {
-      "command": "ragsync-mcp",
+      "command": "ragsync",
       "args": ["--config", "/abs/path/to/config.yaml"]
     }
   }
@@ -113,7 +113,7 @@ than the key itself. Provide that variable to the subprocess via `env`:
 {
   "mcpServers": {
     "ragsync": {
-      "command": "ragsync-mcp",
+      "command": "ragsync",
       "args": ["--config", "/abs/path/to/config.yaml"],
       "env": { "OPENAI_API_KEY": "sk-..." }
     }
@@ -226,15 +226,15 @@ inspects the commits since the last tag and decides the next version:
 When there is a releasable change it bumps `version` in `pyproject.toml`, updates
 `CHANGELOG.md`, tags the commit, creates a GitHub release, and publishes the
 package to PyPI. Once published, anyone can run it with
-`uvx ragsync-mcp --config <path>` (or `pip install ragsync-mcp`).
+`uvx ragsync --config <path>` (or `pip install ragsync`).
 
 **One-time setup** (repo maintainer):
 
 1. On [PyPI](https://pypi.org/manage/account/publishing/), add a **Trusted
-   Publisher** for the project: owner `jsbroks`, repository `ragsync-mcp`,
-   workflow `release.yml`. This lets the workflow publish via OIDC with no stored
-   token. (Alternatively, add a `PYPI_API_TOKEN` secret and set `password:` in
-   the publish step.)
+   Publisher** to the `ragsync` project: owner `jsbroks`, repository
+   `ragsync-mcp`, workflow `release.yml`. This lets the workflow publish via OIDC
+   with no stored token. (Alternatively, add a `PYPI_API_TOKEN` secret and set
+   `password:` in the publish step.)
 2. If `main` is a protected branch, allow the release workflow to push the
    version-bump commit (a repository ruleset bypass for `github-actions[bot]`, or
    a PAT with push access).

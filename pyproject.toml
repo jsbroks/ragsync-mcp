@@ -1,5 +1,5 @@
 [project]
-name = "ragsync-mcp"
+name = "ragsync"
 version = "0.1.0"
 description = "Configuration-driven RAG MCP server: ingest, watch, index, and search arbitrary knowledge sources behind a stable MCP tool surface."
 readme = "README.md"
@@ -41,7 +41,7 @@ Repository = "https://github.com/jsbroks/ragsync-mcp"
 Issues = "https://github.com/jsbroks/ragsync-mcp/issues"
 
 [project.scripts]
-ragsync-mcp = "ragsync_mcp.server:main"
+ragsync = "ragsync_mcp.server:main"
 
 
 [build-system]
