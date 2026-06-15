@@ -4,6 +4,18 @@ version = "0.1.0"
 description = "Configuration-driven RAG MCP server: ingest, watch, index, and search arbitrary knowledge sources behind a stable MCP tool surface."
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [{ name = "Justin Brooks", email = "jsbroks@gmail.com" }]
+keywords = ["mcp", "rag", "retrieval", "embeddings", "vector-search", "llm"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = [
     "beautifulsoup4>=4.12.0",
     "chromadb>=0.5.0",
@@ -23,6 +35,11 @@ openai = ["openai>=1.0.0"]
 voyage = ["voyageai>=0.2.0"]
 dev = ["pytest>=8.0.0"]
 
+[project.urls]
+Homepage = "https://github.com/jsbroks/ragsync-mcp"
+Repository = "https://github.com/jsbroks/ragsync-mcp"
+Issues = "https://github.com/jsbroks/ragsync-mcp/issues"
+
 [project.scripts]
 ragsync-mcp = "ragsync_mcp.server:main"
 
@@ -32,3 +49,25 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ragsync_mcp"]
+
+# ---------------------------------------------------------------------------
+# Release automation (python-semantic-release)
+# ---------------------------------------------------------------------------
+# Version is derived from Conventional Commits since the last tag:
+#   fix:            -> patch   (0.1.0 -> 0.1.1)
+#   feat:           -> minor   (0.1.0 -> 0.2.0)
+#   feat!: / BREAKING CHANGE: -> major (0.1.0 -> 1.0.0)
+# docs/chore/test/ci/refactor/style commits do not trigger a release.
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+commit_parser = "conventional"
+tag_format = "v{version}"
+build_command = "pip install uv && uv build"
+# Bot identity for the automated version-bump commit.
+commit_author = "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+
+[tool.semantic_release.branches.main]
+match = "(main|master)"
+
+[tool.semantic_release.changelog]
+exclude_commit_patterns = ['''^(chore|ci|style)(\(.*\))?:''']

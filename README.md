@@ -207,3 +207,34 @@ uv run pytest
 Tests run fully offline by injecting a deterministic embedder in place of
 fastembed (see `tests/conftest.py`). The architecture and extension contract —
 how to add a new source type — are documented in [`AGENTS.md`](AGENTS.md).
+
+## Releasing
+
+Releases are automated from [Conventional Commits](https://www.conventionalcommits.org).
+CI (`.github/workflows/ci.yml`) runs the test suite on every pull request. On
+merge to `main`, the release workflow (`.github/workflows/release.yml`) runs the
+tests again, then [python-semantic-release](https://python-semantic-release.readthedocs.io)
+inspects the commits since the last tag and decides the next version:
+
+| Commit type | Example | Version bump |
+| ----------- | ------- | ------------ |
+| `fix:` | `fix: handle empty PDF pages` | patch — `0.1.0 → 0.1.1` |
+| `feat:` | `feat: add notion loader` | minor — `0.1.0 → 0.2.0` |
+| `feat!:` / `BREAKING CHANGE:` | `feat!: drop python 3.9` | major — `0.1.0 → 1.0.0` |
+| `docs:` / `chore:` / `test:` / `ci:` / `refactor:` | — | no release |
+
+When there is a releasable change it bumps `version` in `pyproject.toml`, updates
+`CHANGELOG.md`, tags the commit, creates a GitHub release, and publishes the
+package to PyPI. Once published, anyone can run it with
+`uvx ragsync-mcp --config <path>` (or `pip install ragsync-mcp`).
+
+**One-time setup** (repo maintainer):
+
+1. On [PyPI](https://pypi.org/manage/account/publishing/), add a **Trusted
+   Publisher** for the project: owner `jsbroks`, repository `ragsync-mcp`,
+   workflow `release.yml`. This lets the workflow publish via OIDC with no stored
+   token. (Alternatively, add a `PYPI_API_TOKEN` secret and set `password:` in
+   the publish step.)
+2. If `main` is a protected branch, allow the release workflow to push the
+   version-bump commit (a repository ruleset bypass for `github-actions[bot]`, or
+   a PAT with push access).

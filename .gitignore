@@ -8,3 +8,7 @@ __pycache__/
 # Vector store data
 vector_db/
 vector_db*/
+
+# Build artifacts
+dist/
+*.egg-info/

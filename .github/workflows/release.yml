@@ -1,0 +1,57 @@
+name: Release
+
+# On every merge to main: run the test suite, then let python-semantic-release
+# inspect the conventional-commit history. If there is a releasable change
+# (feat/fix/perf/BREAKING CHANGE), it bumps the version in pyproject.toml,
+# updates CHANGELOG.md, tags + creates a GitHub release, builds the package, and
+# publishes it to PyPI. Commits that don't affect the public API (docs, chore,
+# test, ci, refactor, style) produce no release.
+on:
+  push:
+    branches: [main]
+
+# Avoid two releases racing if commits land in quick succession.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Reuse the CI workflow so we never publish a release that fails tests.
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the version-bump commit + tag, create the GitHub release
+      id-token: write # PyPI Trusted Publishing (OIDC) — no stored token needed
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history + tags so semantic-release can find the last release
+          # and parse every commit since it.
+          fetch-depth: 0
+
+      - name: Determine version & create release (python-semantic-release)
+        id: release
+        uses: python-semantic-release/python-semantic-release@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to PyPI
+        if: steps.release.outputs.released == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # No username/password: Trusted Publishing uses the id-token above.
+        # (One-time setup: add this repo + workflow as a trusted publisher on
+        # PyPI. To use an API token instead, set `password: ${{ secrets.PYPI_API_TOKEN }}`.)
+
+      - name: Attach built artifacts to the GitHub release
+        if: steps.release.outputs.released == 'true'
+        uses: python-semantic-release/publish-action@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.release.outputs.tag }}
