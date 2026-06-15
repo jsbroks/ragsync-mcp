@@ -1,0 +1,61 @@
+# Complete ragsync-mcp configuration: multiple sources in one file.
+#
+# `defaults` supplies chunking/embedding/vector_store settings every source
+# inherits unless it overrides them. Each source becomes one searchable
+# collection. See DESIGN.md for the full schema, and folder.yaml / website.yaml
+# in this directory for minimal single-connection-type examples.
+#
+# Run from the repo root:
+#   uv run ragsync-mcp --config examples/config.example.yaml
+
+defaults:
+  chunking:
+    strategy: recursive_character
+    chunk_size: 800
+    chunk_overlap: 100
+  embedding:
+    provider: fastembed # local, no API key
+    model: BAAI/bge-small-en-v1.5
+  vector_store:
+    backend: chroma
+    persist_directory: ./vector_db
+
+sources:
+  - name: product-docs
+    type: folder
+    description: >
+      Product documentation: setup, configuration, and how-to guides.
+      Use for "how do I..." and feature questions.
+    connection:
+      path: ./docs # relative to this config file's directory
+      include: ["**/*.md"]
+      exclude: ["**/internal/**"]
+    watch:
+      enabled: true
+      mode: filesystem
+      recursive: true
+    chunking:
+      strategy: markdown
+      chunk_size: 1000
+      chunk_overlap: 150
+    vector_store:
+      collection: product_docs
+    metadata:
+      product: example
+      audience: public
+
+  - name: troubleshooting-playbooks
+    type: folder
+    description: >
+      Step-by-step troubleshooting playbooks for support engineers.
+      Use for error messages and "it's broken" questions.
+    connection:
+      path: ./playbooks # relative to this config file's directory
+      include: ["**/*.md"]
+    watch:
+      enabled: true
+      mode: filesystem
+    vector_store:
+      collection: playbooks
+    metadata:
+      audience: support

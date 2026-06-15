@@ -1,0 +1,39 @@
+# Website source example: index a fixed list of web pages (fetched, not crawled).
+#
+# `website` fetches each URL in `connection.urls`, extracts readable text, and
+# indexes it. Use `poll` watch mode: pages are re-fetched on an interval and
+# only re-embedded when their visible text changes.
+#
+# Replace the example URLs with real pages, then run from the repo root:
+#   uv run ragsync-mcp --config examples/website.yaml
+
+defaults:
+  embedding:
+    provider: fastembed # local, no API key
+    model: BAAI/bge-small-en-v1.5
+  vector_store:
+    backend: chroma
+    persist_directory: ./vector_db
+
+sources:
+  - name: release-notes
+    type: website
+    description: >
+      Public release notes and changelog pages.
+      Use for "what changed in the latest version" questions.
+    connection:
+      urls:
+        - https://docs.example.com/releases/latest
+        - https://docs.example.com/changelog
+    watch:
+      enabled: true
+      mode: poll
+      interval_seconds: 3600
+    chunking:
+      strategy: recursive_character
+      chunk_size: 800
+      chunk_overlap: 100
+    vector_store:
+      collection: release_notes
+    metadata:
+      audience: public

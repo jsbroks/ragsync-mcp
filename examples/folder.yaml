@@ -1,0 +1,39 @@
+# Folder source example: index a local/mounted directory of files.
+#
+# `folder` reads text and PDF files under `connection.path`, filtered by
+# gitignore-style include/exclude globs. The filesystem watch mode re-indexes
+# only the affected file on create/modify/delete.
+#
+# Run from the repo root:
+#   uv run ragsync-mcp --config examples/folder.yaml
+
+defaults:
+  embedding:
+    provider: fastembed # local, no API key
+    model: BAAI/bge-small-en-v1.5
+  vector_store:
+    backend: chroma
+    persist_directory: ./vector_db
+
+sources:
+  - name: product-docs
+    type: folder
+    description: >
+      Product documentation: setup, configuration, and how-to guides.
+      Use for "how do I..." and feature questions.
+    connection:
+      path: ./docs # relative to this config file's directory
+      include: ["**/*.md", "**/*.pdf"]
+      exclude: ["**/internal/**"]
+    watch:
+      enabled: true
+      mode: filesystem
+      recursive: true
+    chunking:
+      strategy: markdown
+      chunk_size: 1000
+      chunk_overlap: 150
+    vector_store:
+      collection: product_docs
+    metadata:
+      audience: public
