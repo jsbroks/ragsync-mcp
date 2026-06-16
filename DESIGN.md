@@ -1,6 +1,6 @@
 # Generic RAG MCP Server — Design Specification
 
-A configuration-driven Model Context Protocol server that ingests data from
+A configuration-driven MCP server that ingests data from
 arbitrary sources, watches them for changes, indexes them into vector stores,
 and exposes a small, stable set of tools an LLM agent can call to search and
 retrieve that knowledge.

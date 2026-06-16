@@ -1,9 +1,28 @@
-# ragsync
+<div align="center">
 
-A configuration-driven [Model Context Protocol](https://modelcontextprotocol.io)
-server that ingests data from arbitrary sources, watches them for changes,
-indexes them into vector stores, and exposes a small, stable set of tools an LLM
-agent can call to search and retrieve that knowledge.
+<h1>ragsync</h1>
+
+<p>Configuration-driven RAG MCP server — ingest, watch, and search arbitrary knowledge sources behind a stable tool surface.</p>
+
+[![PyPI](https://img.shields.io/pypi/v/ragsync)](https://pypi.org/project/ragsync/)
+[![CI](https://github.com/jsbroks/ragsync-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jsbroks/ragsync-mcp/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/pypi/pyversions/ragsync)](https://pypi.org/project/ragsync/)
+
+</div>
+
+---
+
+## Features
+
+- **Broad source support** — index local folders (text, PDF, Markdown) and web pages; not limited to a single file type or format
+- **Config-driven** — one YAML file defines sources, chunking strategy, embedding model, and vector store; no code required
+- **Live reload** — filesystem watching and polling keep the index current as sources change; editing the config itself applies changes without a restart
+- **Flexible embeddings** — local `fastembed` works out of the box with no API key; swap in OpenAI or Voyage per source
+- **Stable MCP tool surface** — five source-agnostic tools (`search`, `list_sources`, `get_document`, `get_index_status`, `reindex`) that never change as sources are added
+
+## Installation
+
+The fastest way is with [`uvx`](https://docs.astral.sh/uv/) — no clone or install step:
 
 ```json
 {
@@ -16,6 +35,94 @@ agent can call to search and retrieve that knowledge.
 }
 ```
 
+Add this to your MCP client config:
+
+| Client            | Config file                                                   |
+| ----------------- | ------------------------------------------------------------- |
+| Cursor            | `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global) |
+| Claude Desktop    | `claude_desktop_config.json`                                  |
+| Claude Code       | `.mcp.json` (or `claude mcp add`)                             |
+| Windsurf / others | their `mcpServers` config                                     |
+
+> **Paths inside the config are resolved against the config file's directory**
+> (not the client's working directory), so a config can live in the repo and
+> reference repo content with relative paths like `path: ./docs`. Give `--config`
+> itself an **absolute** path, though — the client chooses where it launches the
+> server from, so that's the one path it must be able to find unambiguously.
+
+Pin a version with `"ragsync@0.2.0"` if you want reproducible launches. (If the
+client can't find `uvx` on its `PATH`, use the absolute path to the `uvx` binary
+— `which uvx`.)
+
+<details>
+<summary>Other install options</summary>
+
+**Option B — run in place with uv (no install, from a clone)**
+
+`uv run --directory` runs the server from the cloned repo without installing it:
+
+```json
+{
+  "mcpServers": {
+    "ragsync": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/abs/path/to/ragsync-mcp",
+        "ragsync",
+        "--config",
+        "/abs/path/to/ragsync-mcp/examples/config.example.yaml"
+      ]
+    }
+  }
+}
+```
+
+**Option C — install the CLI globally**
+
+```bash
+uv tool install ragsync        # from PyPI; or a local path to a clone
+```
+
+```json
+{
+  "mcpServers": {
+    "ragsync": {
+      "command": "ragsync",
+      "args": ["--config", "/abs/path/to/config.yaml"]
+    }
+  }
+}
+```
+
+(Equivalently, `"command": "python"`, `"args": ["-m", "ragsync_mcp", "--config", "…"]`
+if the package is installed in the active environment.)
+
+</details>
+
+### Hosted embedding keys
+
+For `openai`/`voyage` sources, the config names an env var (`api_key_env`) rather
+than the key itself. Provide that variable to the subprocess via `env`:
+
+```json
+{
+  "mcpServers": {
+    "ragsync": {
+      "command": "ragsync",
+      "args": ["--config", "/abs/path/to/config.yaml"],
+      "env": { "OPENAI_API_KEY": "sk-..." }
+    }
+  }
+}
+```
+
+After saving, restart/reload the client. It will list the five tools (`search`,
+`list_sources`, `get_document`, `get_index_status`, `reindex`); the agent calls
+`search` to answer questions from your indexed sources. First launch downloads
+the local embedding model, so initial startup can take a little longer.
+
 ## Configuration
 
 A single YAML file defines global `defaults` and a list of `sources`. Each
@@ -26,9 +133,15 @@ different sources use different embedding models safely.
 ```yaml
 defaults:
   chunking:
-    { strategy: recursive_character, chunk_size: 800, chunk_overlap: 100 }
-  embedding: { provider: fastembed, model: BAAI/bge-small-en-v1.5 }
-  vector_store: { backend: chroma, persist_directory: ./vector_db }
+    strategy: recursive_character
+    chunk_size: 800
+    chunk_overlap: 100
+  embedding:
+    provider: fastembed
+    model: BAAI/bge-small-en-v1.5 }
+  vector_store:
+    backend: chroma
+    persist_directory: ./vector_db
 
 sources:
   - name: product-docs
@@ -38,10 +151,18 @@ sources:
       path: ./docs # relative to the config file's directory
       include: ["**/*.md"]
       exclude: ["**/internal/**"]
-    watch: { enabled: true, mode: filesystem }
-    chunking: { strategy: markdown, chunk_size: 1000, chunk_overlap: 150 }
-    vector_store: { collection: product_docs }
-    metadata: { product: example, audience: public }
+    watch:
+      enabled: true
+      mode: filesystem
+    chunking:
+      strategy: markdown
+      chunk_size: 1000
+      chunk_overlap: 150
+    vector_store:
+      collection: product_docs
+    metadata:
+      product: example
+      audience: public
 ```
 
 The `examples/` directory has runnable configs:
@@ -67,141 +188,6 @@ Include/exclude globs use gitignore-style matching (e.g. `**/internal/**`).
 read their API key from the environment variable named by `api_key_env` — keys
 are never written into config.
 
-## Install
-
-```bash
-uv sync                      # core dependencies
-uv sync --extra openai       # optional hosted embedding provider
-uv sync --extra dev          # test dependencies (pytest)
-```
-
-The default embedding provider, `fastembed`, runs locally (ONNX, CPU) and needs
-no API key — the server works out of the box. Model weights download on first
-run.
-
-## Run
-
-```bash
-uv run ragsync --config examples/config.example.yaml
-```
-
-The server reads the config, builds one pipeline per source, runs an initial
-index, starts a change watcher for each watched source, and begins serving MCP
-tools over stdio.
-
-### Live config reload
-
-The config file itself is watched. Editing it applies changes without a restart:
-new sources are built and indexed, removed sources are dropped, and changed
-sources are rebuilt — unchanged sources keep running untouched. An edit that
-fails validation is logged and ignored; the running server is never left in a
-broken state.
-
-## Use from an MCP client (Cursor, Claude, …)
-
-The server speaks MCP over **stdio**, so any MCP-compatible client launches it as
-a subprocess. Clients share the same `mcpServers` JSON shape; only the file
-location differs:
-
-| Client            | Config file                                                   |
-| ----------------- | ------------------------------------------------------------- |
-| Cursor            | `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global) |
-| Claude Desktop    | `claude_desktop_config.json`                                  |
-| Claude Code       | `.mcp.json` (or `claude mcp add`)                             |
-| Windsurf / others | their `mcpServers` config                                     |
-
-> **Paths inside the config are resolved against the config file's directory**
-> (not the client's working directory), so a config can live in the repo and
-> reference repo content with relative paths like `path: ./docs`. Give `--config`
-> itself an **absolute** path, though — the client chooses where it launches the
-> server from, so that's the one path it must be able to find unambiguously.
-
-### Option A — straight from PyPI with uvx (recommended)
-
-[`uvx`](https://docs.astral.sh/uv/) fetches the published
-[`ragsync`](https://pypi.org/project/ragsync/) package and runs it — no clone,
-no install step. The first launch downloads the package and its dependencies
-into the uv cache, so it can take a bit; later launches are fast.
-
-```json
-{
-  "mcpServers": {
-    "ragsync": {
-      "command": "uvx",
-      "args": ["ragsync", "--config", "/abs/path/to/config.yaml"]
-    }
-  }
-}
-```
-
-Pin a version with `"ragsync@0.1.0"` if you want reproducible launches. (If the
-client can't find `uvx` on its `PATH`, use the absolute path to the `uvx` binary
-— `which uvx`.)
-
-### Option B — run in place with uv (no install, from a clone)
-
-`uv run --directory` runs the server from the cloned repo without installing it:
-
-```json
-{
-  "mcpServers": {
-    "ragsync": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/abs/path/to/ragsync-mcp",
-        "ragsync",
-        "--config",
-        "/abs/path/to/ragsync-mcp/examples/config.example.yaml"
-      ]
-    }
-  }
-}
-```
-
-### Option C — install the command, then reference it
-
-```bash
-uv tool install ragsync        # from PyPI; or a local path to a clone
-```
-
-```json
-{
-  "mcpServers": {
-    "ragsync": {
-      "command": "ragsync",
-      "args": ["--config", "/abs/path/to/config.yaml"]
-    }
-  }
-}
-```
-
-(Equivalently, `"command": "python"`, `"args": ["-m", "ragsync_mcp", "--config", "…"]`
-if the package is installed in the active environment.)
-
-### Hosted embedding keys
-
-For `openai`/`voyage` sources, the config names an env var (`api_key_env`) rather
-than the key itself. Provide that variable to the subprocess via `env`:
-
-```json
-{
-  "mcpServers": {
-    "ragsync": {
-      "command": "ragsync",
-      "args": ["--config", "/abs/path/to/config.yaml"],
-      "env": { "OPENAI_API_KEY": "sk-..." }
-    }
-  }
-}
-```
-
-After saving, restart/reload the client. It will list the five tools (`search`,
-`list_sources`, `get_document`, `get_index_status`, `reindex`); the agent calls
-`search` to answer questions from your indexed sources. First launch downloads
-the local embedding model, so initial startup can take a little longer.
-
 ## MCP tools
 
 Five tools, deliberately small and source-agnostic. They never change as sources
@@ -226,6 +212,7 @@ everything" path.
 ## Development
 
 ```bash
+uv sync --extra dev          # install test dependencies
 uv run pytest
 ```
 
