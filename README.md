@@ -1,6 +1,6 @@
 <div align="center">
 
-<h1>ragsync</h1>
+<h1>RAGSync</h1>
 
 <p>Configuration-driven RAG MCP server — ingest, watch, and search arbitrary knowledge sources behind a stable tool surface.</p>
 
@@ -239,14 +239,3 @@ When there is a releasable change it bumps `version` in `pyproject.toml`, update
 `CHANGELOG.md`, tags the commit, creates a GitHub release, and publishes the
 package to PyPI. Once published, anyone can run it with
 `uvx ragsync --config <path>` (or `pip install ragsync`).
-
-**One-time setup** (repo maintainer):
-
-1. On [PyPI](https://pypi.org/manage/account/publishing/), add a **Trusted
-   Publisher** to the `ragsync` project: owner `jsbroks`, repository
-   `ragsync-mcp`, workflow `release.yml`. This lets the workflow publish via OIDC
-   with no stored token. (Alternatively, add a `PYPI_API_TOKEN` secret and set
-   `password:` in the publish step.)
-2. If `main` is a protected branch, allow the release workflow to push the
-   version-bump commit (a repository ruleset bypass for `github-actions[bot]`, or
-   a PAT with push access).
